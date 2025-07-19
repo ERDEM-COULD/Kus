@@ -95,4 +95,4 @@ setInterval(() => {
   }).on('error', err => {
     console.error('❌ Ping hatası:', err.message);
   });
-}, 500); // 500 ms = 0.5 saniye
+}, 100); // 500 ms = 0.5 saniye
