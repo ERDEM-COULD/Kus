@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8" />
+  <title>MC Bot Kontrol Paneli</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <style>
+    body {
+      margin: 0;
+      background: linear-gradient(145deg, #0f2027, #203a43, #2c5364);
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      color: #00ffcc;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 40px 20px;
+      min-height: 100vh;
+    }
+    h1 {
+      font-size: 2.5rem;
+      color: #00ffcc;
+      text-shadow: 0 0 10px #00ffcc;
+    }
+    input, button {
+      background: #1e1e1e;
+      color: #00ffcc;
+      border: 2px solid #00ffcc;
+      padding: 10px;
+      margin: 8px;
+      border-radius: 10px;
+      width: 280px;
+      font-size: 1rem;
+      box-shadow: 0 0 10px rgba(0, 255, 204, 0.3);
+      transition: all 0.2s ease-in-out;
+    }
+    input:focus, button:hover {
+      box-shadow: 0 0 20px rgba(0, 255, 204, 0.6);
+      outline: none;
+      transform: scale(1.03);
+    }
+    .panel {
+      background: rgba(0, 0, 0, 0.4);
+      padding: 30px;
+      border-radius: 20px;
+      box-shadow: 0 0 30px rgba(0, 255, 204, 0.3);
+      max-width: 350px;
+      width: 100%;
+      text-align: center;
+    }
+    .status {
+      font-size: 1.2rem;
+      margin-top: 15px;
+      color: #fff;
+      text-shadow: 0 0 5px #00ffcc;
+    }
+    .credit {
+      margin-top: auto;
+      font-size: 0.9rem;
+      color: #aaa;
+      text-align: center;
+    }
+  </style>
+</head>
+<body>
+  <h1>🟢 MC Bot Panel</h1>
+  <div class="panel">
+    <input id="host" placeholder="Sunucu Adresi (örnek: localhost)" />
+    <input id="port" placeholder="Port (boşsa 25565)" />
+    <input id="version" placeholder="Sürüm (örnek: 1.20.4)" />
+    <input id="username" placeholder="Bot İsmi (örnek: ErdemBot)" />
+    <input id="patron" placeholder="Takip Edilecek Oyuncu (Patron)" />
+    <br />
+    <button id="save">💾 Bilgileri Kaydet</button>
+    <button id="toggle">🚀 Bağlan / ❌ Çıkar</button>
+    <div class="status" id="status">Durum: Kapalı ❌</div>
+  </div>
+  <div class="credit">Designed by Erdem & ChatGPT ❤️</div>
+
+  <script>
+    const statusEl = document.getElementById("status");
+    const toggleBtn = document.getElementById("toggle");
+    const host = document.getElementById("host");
+    const port = document.getElementById("port");
+    const version = document.getElementById("version");
+    const username = document.getElementById("username");
+    const patronInput = document.getElementById("patron");
+
+    let ws;
+    let botActive = false;
+
+    window.onload = () => {
+      host.value = localStorage.getItem("host") || "";
+      port.value = localStorage.getItem("port") || "";
+      version.value = localStorage.getItem("version") || "";
+      username.value = localStorage.getItem("username") || "";
+      patronInput.value = localStorage.getItem("patron") || "Mcompanionsback";
+      botActive = localStorage.getItem("botActive") === "true";
+      updateUI();
+    };
+
+    document.getElementById("save").onclick = () => {
+      localStorage.setItem("host", host.value);
+      localStorage.setItem("port", port.value);
+      localStorage.setItem("version", version.value);
+      localStorage.setItem("username", username.value);
+      localStorage.setItem("patron", patronInput.value);
+      alert("✅ Bilgiler kaydedildi!");
+    };
+
+    toggleBtn.onclick = () => {
+      if (ws && ws.readyState === WebSocket.OPEN) {
+        ws.close();
+        botActive = false;
+        localStorage.setItem("botActive", false);
+        updateUI();
+        return;
+      }
+
+      ws = new WebSocket("ws://localhost:3000");
+
+      ws.onopen = () => {
+        const data = {
+          action: "connect",
+          host: host.value,
+          port: port.value || "25565",
+          version: version.value,
+          username: username.value,
+          patron: patronInput.value || "Mcompanionsback"
+        };
+        ws.send(JSON.stringify(data));
+        botActive = true;
+        localStorage.setItem("botActive", true);
+        updateUI();
+      };
+
+      ws.onclose = () => {
+        botActive = false;
+        localStorage.setItem("botActive", false);
+        updateUI();
+      };
+
+      ws.onerror = (err) => {
+        console.error("WebSocket hatası:", err);
+        alert("⚠️ Sunucuya bağlanılamadı. Sunucu açık mı?");
+      };
+
+      ws.onmessage = (msg) => {
+        console.log("Sunucudan mesaj:", msg.data);
+      };
+    };
+
+    function updateUI() {
+      toggleBtn.innerText = botActive ? "❌ Çıkar" : "🚀 Bağlan";
+      statusEl.innerText = `Durum: ${botActive ? "Açık ✅" : "Kapalı ❌"}`;
+    }
+  </script>
+</body>
+</html>
