@@ -2,7 +2,6 @@ const http = require('http');
 const WebSocket = require('ws');
 const fs = require('fs');
 const path = require('path');
-
 const createBot = require('./bot.js');
 
 const server = http.createServer((req, res) => {
@@ -16,7 +15,6 @@ const server = http.createServer((req, res) => {
       res.end(data);
     });
   } else if (req.url === '/ping') {
-    // ✅ Uyanık kalmak için ping endpoint
     res.writeHead(200, { 'Content-Type': 'text/plain' });
     res.end('pong');
   } else {
@@ -89,3 +87,12 @@ wss.on('connection', ws => {
 server.listen(3000, () => {
   console.log('HTTP + WS server 3000 portunda çalışıyor');
 });
+
+// 🟢 Otomatik Ping Sistemi: 0.5 saniyede bir /ping
+setInterval(() => {
+  http.get('http://localhost:3000/ping', res => {
+    console.log('🔁 Kendine ping atıldı:', res.statusCode);
+  }).on('error', err => {
+    console.error('❌ Ping hatası:', err.message);
+  });
+}, 500); // 500 ms = 0.5 saniye
