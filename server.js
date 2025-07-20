@@ -4,6 +4,7 @@ const fs = require('fs');
 const path = require('path');
 const createBot = require('./bot.js');
 
+// HTML ve diğer dosyaları servis et
 const server = http.createServer((req, res) => {
   if (req.url === '/') {
     fs.readFile(path.join(__dirname, 'public', 'index.html'), (err, data) => {
@@ -23,19 +24,19 @@ const server = http.createServer((req, res) => {
   }
 });
 
+// WebSocket sunucusu
 const wss = new WebSocket.Server({ server });
-
 let botInstance = null;
 
 wss.on('connection', ws => {
-  console.log('Yeni bağlantı');
+  console.log('🟢 Yeni WebSocket bağlantısı kuruldu.');
 
   ws.on('message', msg => {
     let data;
     try {
       data = JSON.parse(msg);
     } catch (e) {
-      ws.send('⚠️ Geçersiz JSON.');
+      ws.send('⚠️ Geçersiz JSON alındı.');
       return;
     }
 
@@ -53,11 +54,13 @@ wss.on('connection', ws => {
         patron: data.patron
       };
 
+      console.log('🤖 Bot başlatılıyor:', options);
+
       botInstance = createBot(options, () => {
-        ws.send('✅ Bot oyuna giriş yaptı.');
+        ws.send('✅ Bot oyuna başarıyla giriş yaptı.');
       });
 
-      ws.send('🔄 Bot başlatıldı.');
+      ws.send('🚀 Bot başlatıldı.');
     }
 
     if (data.action === 'disconnect') {
@@ -71,28 +74,32 @@ wss.on('connection', ws => {
     }
   });
 
+  // Sayfa kapanınca bot çıkmasın
   ws.on('close', () => {
-    if (botInstance) {
-      botInstance.quit();
-      botInstance = null;
-      console.log('Bot kapatıldı, bağlantı kapandı.');
-    }
+    console.log('🔌 WebSocket kapandı (sayfa kapandı), bot çalışmaya devam ediyor.');
+    // bot.quit() çağrılmadığı için bot oyunda kalır
   });
 
   ws.on('error', err => {
-    console.error('WebSocket hatası:', err);
+    console.error('❌ WebSocket hatası:', err);
   });
 });
 
-server.listen(3000, () => {
-  console.log('HTTP + WS server 3000 portunda çalışıyor');
+// Sunucuyu başlat
+const PORT = process.env.PORT || 3000;
+server.listen(PORT, () => {
+  console.log(`🌐 Sunucu http://localhost:${PORT} adresinde çalışıyor`);
 });
 
-// 🟢 Otomatik Ping Sistemi: 0.5 saniyede bir /ping
+// Render gibi platformlar için kendine ping atarak ayakta tut
 setInterval(() => {
-  http.get('http://localhost:3000/ping', res => {
+  http.get(`http://localhost:${PORT}/ping`, res => {
     console.log('🔁 Kendine ping atıldı:', res.statusCode);
   }).on('error', err => {
     console.error('❌ Ping hatası:', err.message);
   });
-}, 100); // 500 ms = 0.5 saniye
+}, 500); // 0.5 saniyede bir ping
+
+// Uyumasın diye boş bir döngü
+setInterval(() => {}, 1000);
+
